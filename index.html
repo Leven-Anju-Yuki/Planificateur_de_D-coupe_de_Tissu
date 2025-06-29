@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="fr">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>Planificateur de Découpe de Tissu</title>
+        <link rel="stylesheet" href="assets/css/style.css" />
+    </head>
+    <body>
+        <h1>🧵 Planificateur de Découpe de Tissu</h1>
+
+        <div id="controls">
+            <label for="width">Largeur tissu (cm) :</label>
+            <input type="number" id="width" value="100" />
+            <label for="height">Hauteur tissu (cm) :</label>
+            <input type="number" id="height" value="100" />
+            <button onclick="createCanvas()">Créer le tissu</button>
+            <br /><br />
+            <label for="shape">Forme :</label>
+            <select id="shape">
+                <option value="rectangle">Rectangle</option>
+                <option value="cercle">Cercle</option>
+            </select>
+            <label for="w">Largeur (cm) :</label>
+            <input type="number" id="w" value="20" />
+            <label for="h">Hauteur (cm) :</label>
+            <input type="number" id="h" value="20" />
+            <label for="color">Couleur :</label>
+            <input type="color" id="color" value="#ff0000" />
+            <button onclick="addPiece()">Ajouter</button>
+        </div>
+
+        <div id="canvas-container"></div>
+
+        <div id="buttons">
+            <button onclick="exportJSON()">📤 Exporter JSON</button>
+            <button onclick="exportImage()">🖼️ Exporter en image</button>
+        </div>
+
+        <script src="assets/js/script.js"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    </body>
+</html>

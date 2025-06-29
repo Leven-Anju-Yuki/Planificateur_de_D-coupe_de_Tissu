@@ -1,0 +1,26 @@
+    body {
+      font-family: Arial, sans-serif;
+      margin: 20px;
+    }
+    #controls {
+      margin-bottom: 20px;
+    }
+    label {
+      margin-right: 5px;
+    }
+    #canvas-container {
+      border: 2px dashed #ccc;
+      position: relative;
+      background-color: #fdfdfd;
+    }
+    .piece {
+      position: absolute;
+      cursor: move;
+      opacity: 0.9;
+    }
+    .out-of-bounds {
+      border: 2px solid red;
+    }
+    #buttons {
+      margin-top: 10px;
+    }
