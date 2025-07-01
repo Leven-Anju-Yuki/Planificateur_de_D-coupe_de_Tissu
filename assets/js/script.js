@@ -1,101 +1,180 @@
-let canvasContainer;
+let tissuDiv;
+// Tableau de couleurs pastel pour les formes
+const couleursPastel = ["#FFB3BA", "#FFDFBA", "#FFFFBA", "#BAFFC9", "#BAE1FF", "CDC1FF"];
 const CM_TO_PX = 4; // 1 cm = 4 pixels (ajustable)
 
-function createCanvas() {
-  const width = parseInt(document.getElementById("width").value);
-  const height = parseInt(document.getElementById("height").value);
-  canvasContainer = document.getElementById("canvas-container");
-  canvasContainer.innerHTML = "";
-  canvasContainer.style.width = width * CM_TO_PX + "px";
-  canvasContainer.style.height = height * CM_TO_PX + "px";
+// Crée le tissu selon les dimensions saisies
+function createTissu() {
+    const width = parseFloat(document.getElementById("largeur").value);
+    const height = parseFloat(document.getElementById("hauteur").value);
+    tissuDiv = document.getElementById("tissu");
+    tissuDiv.innerHTML = "";
+    tissuDiv.style.width = width * CM_TO_PX + "px";
+    tissuDiv.style.height = height * CM_TO_PX + "px";
+    tissuDiv.tabIndex = 0; // Pour capter les touches clavier
+    tissuDiv.focus();
 }
 
-function addPiece() {
-  const shape = document.getElementById("shape").value;
-  const w = parseInt(document.getElementById("w").value) * CM_TO_PX;
-  const h = parseInt(document.getElementById("h").value) * CM_TO_PX;
-  const color = document.getElementById("color").value;
+// Ajoute une forme sur le tissu
+function ajouterForme() {
+    const forme = document.getElementById("forme").value;
+    const l = parseFloat(document.getElementById("formLargeur").value) * CM_TO_PX;
+    const h = parseFloat(document.getElementById("formHauteur").value) * CM_TO_PX;
+    const nom = document.getElementById("formNom").value || forme;
+    const couleur = couleursPastel[Math.floor(Math.random() * couleursPastel.length)];
 
-  const piece = document.createElement("div");
-  piece.className = "piece";
-  piece.style.backgroundColor = color;
-  piece.style.width = w + "px";
-  piece.style.height = h + "px";
-  piece.style.left = "0px";
-  piece.style.top = "0px";
-  if (shape === "cercle") {
-    piece.style.borderRadius = "50%";
-  }
-  piece.draggable = true;
-  piece.ondragstart = dragStart;
-  piece.ondragend = dragEnd;
-  piece.onclick = () => {
-    if (confirm("Supprimer cette pièce ?")) piece.remove();
-  };
+    const elem = document.createElement("div");
+    elem.className = "shape";
+    elem.style.background = couleur;
+    elem.style.left = "0px";
+    elem.style.top = "0px";
 
-  canvasContainer.appendChild(piece);
+    // Définition des styles selon la forme choisie
+    if (forme === "carre") {
+        elem.style.width = elem.style.height = l + "px";
+    } else if (forme === "rectangle") {
+        elem.style.width = l + "px";
+        elem.style.height = h + "px";
+    } else if (forme === "cercle") {
+        elem.style.width = l + "px";
+        elem.style.height = l + "px";
+        elem.style.borderRadius = "50%";
+    } else if (forme === "triangle") {
+        elem.style.width = "0";
+        elem.style.height = "0";
+        elem.style.borderLeft = l / 2 + "px solid transparent";
+        elem.style.borderRight = l / 2 + "px solid transparent";
+        elem.style.borderBottom = h + "px solid " + couleur;
+        elem.style.background = "none";
+    }
+
+    makeDraggable(elem); // Rendre la forme déplaçable à la souris
+    ajouterClavier(elem); // Permettre le déplacement au clavier
+    tissuDiv.appendChild(elem); // Ajouter la forme au tissu
+    ajouterALaListe(nom, elem); // Ajouter la forme à la liste
+    verifierDepassement(elem); // Vérifier si la forme dépasse du tissu
 }
 
-let offsetX, offsetY, dragged;
-
-function dragStart(e) {
-  dragged = e.target;
-  offsetX = e.offsetX;
-  offsetY = e.offsetY;
+// Ajoute la forme à la liste des formes avec un bouton de suppression
+function ajouterALaListe(nom, element) {
+    const ul = document.getElementById("liste-formes");
+    const li = document.createElement("li");
+    li.textContent = nom;
+    const btn = document.createElement("button");
+    btn.textContent = "❌";
+    btn.onclick = () => {
+        element.remove();
+        li.remove();
+    };
+    li.appendChild(btn);
+    ul.appendChild(li);
 }
 
-function dragEnd(e) {
-  const rect = canvasContainer.getBoundingClientRect();
-  let x = e.clientX - rect.left - offsetX;
-  let y = e.clientY - rect.top - offsetY;
-
-  x = Math.max(0, Math.min(x, canvasContainer.clientWidth - dragged.offsetWidth));
-  y = Math.max(0, Math.min(y, canvasContainer.clientHeight - dragged.offsetHeight));
-
-  dragged.style.left = x + "px";
-  dragged.style.top = y + "px";
-
-  checkOutOfBounds(dragged);
+// Rend un élément déplaçable à la souris
+function makeDraggable(el) {
+    let offsetX, offsetY;
+    el.addEventListener("mousedown", (e) => {
+        offsetX = e.offsetX;
+        offsetY = e.offsetY;
+        el.focus();
+        function onMouseMove(e) {
+            el.style.left = e.pageX - tissuDiv.offsetLeft - offsetX + "px";
+            el.style.top = e.pageY - tissuDiv.offsetTop - offsetY + "px";
+            verifierDepassement(el);
+        }
+        function onMouseUp() {
+            document.removeEventListener("mousemove", onMouseMove);
+            document.removeEventListener("mouseup", onMouseUp);
+        }
+        document.addEventListener("mousemove", onMouseMove);
+        document.addEventListener("mouseup", onMouseUp);
+    });
+    el.tabIndex = 0;
+    el.classList.add("draggable");
 }
 
-function checkOutOfBounds(piece) {
-  const box = piece.getBoundingClientRect();
-  const canvasBox = canvasContainer.getBoundingClientRect();
-  if (
-    box.left < canvasBox.left ||
-    box.top < canvasBox.top ||
-    box.right > canvasBox.right ||
-    box.bottom > canvasBox.bottom
-  ) {
-    piece.classList.add("out-of-bounds");
-  } else {
-    piece.classList.remove("out-of-bounds");
-  }
+// Permet le déplacement de la forme au clavier (flèches)
+function ajouterClavier(el) {
+    el.addEventListener("keydown", (e) => {
+        const step = 1;
+        const top = parseInt(el.style.top);
+        const left = parseInt(el.style.left);
+        if (e.key === "ArrowUp") el.style.top = top - step + "px";
+        else if (e.key === "ArrowDown") el.style.top = top + step + "px";
+        else if (e.key === "ArrowLeft") el.style.left = left - step + "px";
+        else if (e.key === "ArrowRight") el.style.left = left + step + "px";
+        verifierDepassement(el);
+    });
 }
 
-function exportJSON() {
-  const pieces = [...canvasContainer.querySelectorAll(".piece")].map(p => ({
-    left: p.style.left,
-    top: p.style.top,
-    width: p.style.width,
-    height: p.style.height,
-    color: p.style.backgroundColor,
-    borderRadius: p.style.borderRadius || "0"
-  }));
-  const json = JSON.stringify(pieces, null, 2);
-  const blob = new Blob([json], { type: "application/json" });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement("a");
-  a.href = url;
-  a.download = "decoupe.json";
-  a.click();
+// Vérifie si la forme dépasse du tissu et ajoute une classe si c'est le cas
+function verifierDepassement(el) {
+    const r = el.getBoundingClientRect();
+    const parent = tissuDiv.getBoundingClientRect();
+    if (
+        r.left < parent.left ||
+        r.top < parent.top ||
+        r.right > parent.right ||
+        r.bottom > parent.bottom
+    ) {
+        el.classList.add("outside");
+    } else {
+        el.classList.remove("outside");
+    }
 }
 
-function exportImage() {
-  html2canvas(canvasContainer).then(canvas => {
+// Exporte le tissu en image PNG
+function exporterImage() {
+    html2canvas(tissuDiv).then((canvas) => {
+        const link = document.createElement("a");
+        link.download = "decoupe-tissu.png";
+        link.href = canvas.toDataURL();
+        link.click();
+    });
+}
+
+// Exporte la configuration des formes en JSON
+function exporterJSON() {
+    const formes = Array.from(tissuDiv.children)
+        .filter((c) => c.classList.contains("shape"))
+        .map((el) => {
+            return {
+                left: el.style.left,
+                top: el.style.top,
+                width: el.style.width,
+                height: el.style.height,
+                type: el.className,
+                background: el.style.background,
+            };
+        });
+    const blob = new Blob([JSON.stringify(formes, null, 2)], { type: "application/json" });
     const link = document.createElement("a");
-    link.download = "decoupe.png";
-    link.href = canvas.toDataURL();
+    link.href = URL.createObjectURL(blob);
+    link.download = "decoupe-tissu.json";
     link.click();
-  });
 }
+// Détection des boutons mobiles
+const upArrow = document.getElementById("upArrow");
+const downArrow = document.getElementById("downArrow");
+const leftArrow = document.getElementById("leftArrow");
+const rightArrow = document.getElementById("rightArrow");
+
+upArrow.addEventListener("click", function () {
+    wolfY = Math.max(wolfY - 30, 0);
+    wolf.style.top = `${wolfY}px`;
+});
+
+downArrow.addEventListener("click", function () {
+    wolfY = Math.min(wolfY + 30, gameScreenRect.height - wolf.offsetHeight);
+    wolf.style.top = `${wolfY}px`;
+});
+
+leftArrow.addEventListener("click", function () {
+    wolfX = Math.max(wolfX - 30, 0);
+    wolf.style.left = `${wolfX}px`;
+});
+
+rightArrow.addEventListener("click", function () {
+    wolfX = Math.min(wolfX + 30, gameScreenRect.width - wolf.offsetWidth);
+    wolf.style.left = `${wolfX}px`;
+});

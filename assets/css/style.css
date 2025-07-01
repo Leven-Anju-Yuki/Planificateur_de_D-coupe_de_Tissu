@@ -1,26 +1,119 @@
-    body {
-      font-family: Arial, sans-serif;
-      margin: 20px;
+body {
+    font-family: Arial, sans-serif;
+    padding: 20px;
+    background: #f9f9f9;
+}
+
+#tissu {
+    position: relative;
+    margin-top: 20px;
+    border: 2px dashed #999;
+    background: repeating-linear-gradient(45deg, #f0f0f0, #f0f0f0 10px, #e0e0e0 10px, #e0e0e0 20px);
+}
+
+.shape {
+    position: absolute;
+    cursor: move;
+    outline: none;
+    border: 1px solid #ccc;
+    border-radius: 3px;
+    opacity: 0.9;
+}
+
+/* Triangle spécifique */
+.triangle {
+    width: 0;
+    height: 0;
+    border-left: 0 solid transparent;
+    border-right: 0 solid transparent;
+    border-bottom: 0 solid;
+}
+
+/* Cercle spécifique */
+.circle {
+    border-radius: 50%;
+}
+
+/* Surbrillance rouge si en dehors du tissu */
+.shape.outside {
+    outline: 3px dashed red;
+    background-image: repeating-linear-gradient(
+        45deg,
+        rgba(255, 0, 0, 0.2),
+        rgba(255, 0, 0, 0.2) 5px,
+        transparent 5px,
+        transparent 10px
+    );
+}
+
+/* Liste des formes */
+#form-list {
+    margin-top: 20px;
+}
+
+#liste-formes {
+    list-style: none;
+    padding: 0;
+}
+
+#liste-formes li {
+    background: #fff;
+    border: 1px solid #ddd;
+    padding: 8px;
+    margin-bottom: 5px;
+    border-radius: 5px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    width: 50%;
+}
+
+#liste-formes button {
+    background: #ff8080;
+    border: none;
+    color: white;
+    padding: 4px 8px;
+    border-radius: 4px;
+    cursor: pointer;
+}
+
+#liste-formes button:hover {
+    background: #ff4d4d;
+}
+#mobile-controls {
+    display: none; /* Par défaut, caché */
+    position: fixed;
+    bottom: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 1000;
+}
+
+#upArrow {
+    display: block;
+    margin: 0 auto 10px;
+}
+
+.arrow {
+    display: inline-block;
+    width: 50px;
+    height: 50px;
+    background-color: var(--button-bg, #007bff);
+    border: 2px solid var(--button-border, #0056b3);
+    color: #fff;
+    text-align: center;
+    line-height: 50px;
+    font-size: 24px;
+    border-radius: 5px;
+    padding: 3px;
+    /* cursor: pointer; */
+    user-select: none;
+}
+
+@media only screen and (max-width: 768px) {
+    #mobile-controls {
+        display: flex; /* Afficher les contrôles sur les écrans plus petits */
+        flex-direction: column;
+        align-items: center;
     }
-    #controls {
-      margin-bottom: 20px;
-    }
-    label {
-      margin-right: 5px;
-    }
-    #canvas-container {
-      border: 2px dashed #ccc;
-      position: relative;
-      background-color: #fdfdfd;
-    }
-    .piece {
-      position: absolute;
-      cursor: move;
-      opacity: 0.9;
-    }
-    .out-of-bounds {
-      border: 2px solid red;
-    }
-    #buttons {
-      margin-top: 10px;
-    }
+}

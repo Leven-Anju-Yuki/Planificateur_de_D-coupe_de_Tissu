@@ -50,4 +50,6 @@ Une application web pour aider les couturières à visualiser la disposition des
 
 🧷 Application pensée pour les couturières, modélistes et créateurs textile souhaitant gagner du temps dans la planification des découpes.
 
-Développé avec ❤️ en JavaScript, HTML et CSS.
+## 🐰 Réalisé par
+
+Florie – Développeuse web passionnée, amoureuse des animaux et fan de projets utiles et bien présentés 🧡 en JavaScript, HTML et CSS.
