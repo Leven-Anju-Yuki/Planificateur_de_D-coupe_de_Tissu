@@ -1,35 +1,47 @@
 let tissuDiv;
-// Tableau de couleurs pastel pour les formes
-const couleursPastel = ["#FFB3BA", "#FFDFBA", "#FFFFBA", "#BAFFC9", "#BAE1FF", "CDC1FF"];
-const CM_TO_PX = 4; // 1 cm = 4 pixels (ajustable)
+let shapes = [];
+let selectedElement = null;
 
-// Crée le tissu selon les dimensions saisies
+// Quelques jolies couleurs pastel pour nos formes
+const couleursPastel = ["#FFB3BA", "#FFDFBA", "#FFFFBA", "#BAFFC9", "#BAE1FF", "CDC1FF"];
+
+// Constante pour convertir des centimètres en pixels (1 cm = 4 px ici)
+let CM_TO_PX = window.innerWidth < 768 ? 2 : 4; // 2px/cm sur mobile, 4px/cm sur ordi
+
+// 🧵 Création du tissu
 function createTissu() {
+    // On récupère les dimensions saisies par l'utilisateur
     const width = parseFloat(document.getElementById("largeur").value);
     const height = parseFloat(document.getElementById("hauteur").value);
+
+    // On sélectionne le div "tissu" et on le vide
     tissuDiv = document.getElementById("tissu");
     tissuDiv.innerHTML = "";
+
+    // On applique la taille du tissu convertie en pixels
     tissuDiv.style.width = width * CM_TO_PX + "px";
     tissuDiv.style.height = height * CM_TO_PX + "px";
-    tissuDiv.tabIndex = 0; // Pour capter les touches clavier
+
+    // On rend le div focusable pour pouvoir y capter les touches
+    tissuDiv.tabIndex = 0;
     tissuDiv.focus();
 }
-
-// Ajoute une forme sur le tissu
+// ➕ Ajout d’une nouvelle forme sur le tissu
 function ajouterForme() {
     const forme = document.getElementById("forme").value;
     const l = parseFloat(document.getElementById("formLargeur").value) * CM_TO_PX;
     const h = parseFloat(document.getElementById("formHauteur").value) * CM_TO_PX;
-    const nom = document.getElementById("formNom").value || forme;
+    const nom = document.getElementById("formNom").value || forme; // Si pas de nom saisi, on prend le type de forme
     const couleur = couleursPastel[Math.floor(Math.random() * couleursPastel.length)];
 
-    const elem = document.createElement("div");
+    const elem = document.createElement("div"); // On crée un nouveau div pour la forme
     elem.className = "shape";
     elem.style.background = couleur;
-    elem.style.left = "0px";
+    elem.style.left = "0px"; // Position de départ en haut à gauche
     elem.style.top = "0px";
+    elem.dataset.rotation = "0"; // Stocke l’angle de rotation
 
-    // Définition des styles selon la forme choisie
+    // On applique le style en fonction du type de forme
     if (forme === "carre") {
         elem.style.width = elem.style.height = l + "px";
     } else if (forme === "rectangle") {
@@ -38,7 +50,7 @@ function ajouterForme() {
     } else if (forme === "cercle") {
         elem.style.width = l + "px";
         elem.style.height = l + "px";
-        elem.style.borderRadius = "50%";
+        elem.style.borderRadius = "50%"; // Cercle = bord arrondi à 100%
     } else if (forme === "triangle") {
         elem.style.width = "0";
         elem.style.height = "0";
@@ -48,35 +60,229 @@ function ajouterForme() {
         elem.style.background = "none";
     }
 
-    makeDraggable(elem); // Rendre la forme déplaçable à la souris
-    ajouterClavier(elem); // Permettre le déplacement au clavier
-    tissuDiv.appendChild(elem); // Ajouter la forme au tissu
-    ajouterALaListe(nom, elem); // Ajouter la forme à la liste
-    verifierDepassement(elem); // Vérifier si la forme dépasse du tissu
+    // On rend la forme déplaçable à la souris et au clavier
+    makeDraggable(elem);
+    ajouterClavier(elem);
+
+    // On ajoute la forme au tissu
+    tissuDiv.appendChild(elem);
+
+    // Et à la liste à droite (avec nom, taille, boutons)
+    ajouterALaListe(nom, elem);
+
+    // On vérifie si elle dépasse du tissu
+    verifierDepassement(elem);
+    shapes.push(elem);
 }
 
-// Ajoute la forme à la liste des formes avec un bouton de suppression
+function updateShapeList() {
+    const list = document.getElementById("shapeList");
+    list.innerHTML = "";
+
+    shapes.forEach((shape, index) => {
+        const li = document.createElement("li");
+        li.textContent = `Forme ${index + 1}`;
+        li.addEventListener("click", () => {
+            selectedShape = shape;
+            li.classList.add("selected");
+        });
+        list.appendChild(li);
+    });
+}
+
+// 📋 Ajout de la forme à la liste visible (avec ses infos)
 function ajouterALaListe(nom, element) {
     const ul = document.getElementById("liste-formes");
     const li = document.createElement("li");
-    li.textContent = nom;
-    const btn = document.createElement("button");
-    btn.textContent = "❌";
-    btn.onclick = () => {
+
+    // Récupération des dimensions en cm
+    const largeur = element.offsetWidth / CM_TO_PX;
+    const hauteur = element.offsetHeight / CM_TO_PX;
+
+    li.textContent = `${nom} - ${largeur} x ${hauteur} cm `;
+
+    // Bouton suppression
+    const btnDelete = document.createElement("button");
+    btnDelete.textContent = "❌";
+    btnDelete.onclick = () => {
         element.remove();
         li.remove();
     };
-    li.appendChild(btn);
+
+    // Boutons rotation
+    const btnRotateRight = document.createElement("button");
+    btnRotateRight.textContent = "↪️";
+    btnRotateRight.onclick = () => rotateElement(element, 15);
+
+    const btnRotateLeft = document.createElement("button");
+    btnRotateLeft.textContent = "↩️";
+    btnRotateLeft.onclick = () => rotateElement(element, -15);
+
+    // ➕ Ajout du clic pour sélection
+    li.addEventListener("click", () => {
+        // Supprime la classe 'selected' de tous les éléments
+        const allItems = ul.querySelectorAll("li");
+        allItems.forEach((item) => item.classList.remove("selected"));
+
+        // Applique la classe 'selected' à l'élément cliqué
+        li.classList.add("selected");
+
+        // Met à jour la forme sélectionnée
+        selectedShape = element;
+
+        // Donne aussi le focus à l’élément correspondant sur le tissu
+        element.focus();
+    });
+
+    li.appendChild(btnRotateRight);
+    li.appendChild(btnRotateLeft);
+    li.appendChild(btnDelete);
     ul.appendChild(li);
 }
 
-// Rend un élément déplaçable à la souris
+// 🐭 Déplacement des formes à la souris
+function makeDraggable(el) {
+    let offsetX, offsetY;
+
+    el.addEventListener("mousedown", (e) => {
+        offsetX = e.offsetX;
+        offsetY = e.offsetY;
+        selectedElement = el;
+        el.focus();
+
+        function onMouseMove(e) {
+            el.style.left = e.pageX - tissuDiv.offsetLeft - offsetX + "px";
+            el.style.top = e.pageY - tissuDiv.offsetTop - offsetY + "px";
+            verifierDepassement(el);
+        }
+
+        function onMouseUp() {
+            document.removeEventListener("mousemove", onMouseMove);
+            document.removeEventListener("mouseup", onMouseUp);
+        }
+
+        document.addEventListener("mousemove", onMouseMove);
+        document.addEventListener("mouseup", onMouseUp);
+    });
+
+    el.tabIndex = 0;
+    el.classList.add("draggable");
+
+    el.addEventListener("click", () => {
+        selectedElement = el;
+        el.focus();
+    });
+}
+function ajouterClavier(el) {
+    el.addEventListener("keydown", (e) => {
+        const step = 1;
+        const top = parseInt(el.style.top);
+        const left = parseInt(el.style.left);
+
+        if (e.key === "ArrowUp") el.style.top = top - step + "px";
+        else if (e.key === "ArrowDown") el.style.top = top + step + "px";
+        else if (e.key === "ArrowLeft") el.style.left = left - step + "px";
+        else if (e.key === "ArrowRight") el.style.left = left + step + "px";
+        else if (e.key === "a" || e.key === "A") rotateElement(el, -15);
+        else if (e.key === "e" || e.key === "E") rotateElement(el, 15);
+
+        verifierDepassement(el);
+    });
+}
+// 🔄 Fonction pour faire tourner une forme
+function rotateElement(el, angle) {
+    const current = parseInt(el.dataset.rotation || "0");
+    const newAngle = current + angle;
+    el.dataset.rotation = newAngle;
+    el.style.transform = `rotate(${newAngle}deg)`;
+}
+
+// 🚧 Vérifie si une forme dépasse du tissu
+function verifierDepassement(el) {
+    const r = el.getBoundingClientRect(); // position réelle sur l'écran
+    const parent = tissuDiv.getBoundingClientRect();
+
+    if (
+        r.left < parent.left ||
+        r.top < parent.top ||
+        r.right > parent.right ||
+        r.bottom > parent.bottom
+    ) {
+        el.classList.add("outside"); // Ajoute une classe si ça dépasse
+    } else {
+        el.classList.remove("outside");
+    }
+}
+// 📸 Export du tissu en image PNG
+function exporterImage() {
+    html2canvas(tissuDiv).then((canvas) => {
+        const link = document.createElement("a");
+        link.download = "decoupe-tissu.png";
+        link.href = canvas.toDataURL();
+        link.click();
+    });
+}
+// 💾 Export des données en JSON (pour sauvegarder)
+function exporterJSON() {
+    const formes = Array.from(tissuDiv.children)
+        .filter((c) => c.classList.contains("shape"))
+        .map((el) => {
+            return {
+                left: el.style.left,
+                top: el.style.top,
+                width: el.style.width,
+                height: el.style.height,
+                type: el.className,
+                rotation: el.dataset.rotation || "0",
+                background: el.style.background,
+            };
+        });
+    const blob = new Blob([JSON.stringify(formes, null, 2)], { type: "application/json" });
+    const link = document.createElement("a");
+    link.href = URL.createObjectURL(blob);
+    link.download = "decoupe-tissu.json";
+    link.click();
+}
+// // 📥 Import des données depuis un fichier JSON
+// function importerJSON(event) {
+//     const file = event.target.files[0];
+//     if (!file) return;
+//     const reader = new FileReader();
+//     reader.onload = (e) => {
+//         const data = JSON.parse(e.target.result);
+//         data.forEach((f) => {
+//             const elem = document.createElement("div");
+//             elem.className = "shape";
+//             elem.style.left = f.left;
+//             elem.style.top = f.top;
+//             elem.style.width = f.width;
+//             elem.style.height = f.height;
+//             elem.style.background = f.background;
+//             if (f.type.includes("cercle")) elem.style.borderRadius = "50%";
+//             makeDraggable(elem);
+//             ajouterClavier(elem);
+//             tissuDiv.appendChild(elem);
+//             ajouterALaListe("Importé", elem);
+//         });
+//     };
+//     reader.readAsText(file);
+//}
+
+// 🔄 Réinitialiser complètement le tissu
+function reinitialiserTissu() {
+    const formes = tissuDiv.querySelectorAll(".forme");
+    formes.forEach((forme) => forme.remove());
+    selectedElement = null;
+}
+// Ajout à makeDraggable
 function makeDraggable(el) {
     let offsetX, offsetY;
     el.addEventListener("mousedown", (e) => {
         offsetX = e.offsetX;
         offsetY = e.offsetY;
+        selectedElement = el;
         el.focus();
+
         function onMouseMove(e) {
             el.style.left = e.pageX - tissuDiv.offsetLeft - offsetX + "px";
             el.style.top = e.pageY - tissuDiv.offsetTop - offsetY + "px";
@@ -91,90 +297,40 @@ function makeDraggable(el) {
     });
     el.tabIndex = 0;
     el.classList.add("draggable");
-}
 
-// Permet le déplacement de la forme au clavier (flèches)
-function ajouterClavier(el) {
-    el.addEventListener("keydown", (e) => {
-        const step = 1;
-        const top = parseInt(el.style.top);
-        const left = parseInt(el.style.left);
-        if (e.key === "ArrowUp") el.style.top = top - step + "px";
-        else if (e.key === "ArrowDown") el.style.top = top + step + "px";
-        else if (e.key === "ArrowLeft") el.style.left = left - step + "px";
-        else if (e.key === "ArrowRight") el.style.left = left + step + "px";
-        verifierDepassement(el);
+    el.addEventListener("click", () => {
+        selectedElement = el;
+        el.focus();
     });
 }
 
-// Vérifie si la forme dépasse du tissu et ajoute une classe si c'est le cas
-function verifierDepassement(el) {
-    const r = el.getBoundingClientRect();
-    const parent = tissuDiv.getBoundingClientRect();
-    if (
-        r.left < parent.left ||
-        r.top < parent.top ||
-        r.right > parent.right ||
-        r.bottom > parent.bottom
-    ) {
-        el.classList.add("outside");
-    } else {
-        el.classList.remove("outside");
-    }
+// Fonction pour déplacer la forme sélectionnée
+if (window.innerWidth < 768) {
+    document.getElementById("mobile-controls").style.display = "flex";
+}
+function isMobile() {
+    return /Mobi|Android/i.test(navigator.userAgent);
 }
 
-// Exporte le tissu en image PNG
-function exporterImage() {
-    html2canvas(tissuDiv).then((canvas) => {
-        const link = document.createElement("a");
-        link.download = "decoupe-tissu.png";
-        link.href = canvas.toDataURL();
-        link.click();
-    });
+if (isMobile()) {
+    document.getElementById("mobile-controls").style.display = "block";
 }
 
-// Exporte la configuration des formes en JSON
-function exporterJSON() {
-    const formes = Array.from(tissuDiv.children)
-        .filter((c) => c.classList.contains("shape"))
-        .map((el) => {
-            return {
-                left: el.style.left,
-                top: el.style.top,
-                width: el.style.width,
-                height: el.style.height,
-                type: el.className,
-                background: el.style.background,
-            };
-        });
-    const blob = new Blob([JSON.stringify(formes, null, 2)], { type: "application/json" });
-    const link = document.createElement("a");
-    link.href = URL.createObjectURL(blob);
-    link.download = "decoupe-tissu.json";
-    link.click();
+
+function moveSelectedElement(dx, dy) {
+    if (!selectedElement) return;
+
+    // Position actuelle
+    const currentLeft = parseInt(selectedElement.style.left || 0);
+    const currentTop = parseInt(selectedElement.style.top || 0);
+
+    // Nouvelle position
+    selectedElement.style.left = `${currentLeft + dx}px`;
+    selectedElement.style.top = `${currentTop + dy}px`;
 }
-// Détection des boutons mobiles
-const upArrow = document.getElementById("upArrow");
-const downArrow = document.getElementById("downArrow");
-const leftArrow = document.getElementById("leftArrow");
-const rightArrow = document.getElementById("rightArrow");
 
-upArrow.addEventListener("click", function () {
-    wolfY = Math.max(wolfY - 30, 0);
-    wolf.style.top = `${wolfY}px`;
-});
-
-downArrow.addEventListener("click", function () {
-    wolfY = Math.min(wolfY + 30, gameScreenRect.height - wolf.offsetHeight);
-    wolf.style.top = `${wolfY}px`;
-});
-
-leftArrow.addEventListener("click", function () {
-    wolfX = Math.max(wolfX - 30, 0);
-    wolf.style.left = `${wolfX}px`;
-});
-
-rightArrow.addEventListener("click", function () {
-    wolfX = Math.min(wolfX + 30, gameScreenRect.width - wolf.offsetWidth);
-    wolf.style.left = `${wolfX}px`;
-});
+// Attache les événements aux flèches mobile
+document.getElementById("upArrow").addEventListener("click", () => moveSelectedElement(0, -10));
+document.getElementById("downArrow").addEventListener("click", () => moveSelectedElement(0, 10));
+document.getElementById("leftArrow").addEventListener("click", () => moveSelectedElement(-10, 0));
+document.getElementById("rightArrow").addEventListener("click", () => moveSelectedElement(10, 0));

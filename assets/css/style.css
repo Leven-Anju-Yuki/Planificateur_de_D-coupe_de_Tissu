@@ -82,13 +82,12 @@ body {
 }
 #mobile-controls {
     display: none; /* Par défaut, caché */
-    position: fixed;
-    bottom: 20px;
-    left: 50%;
-    transform: translateX(-50%);
-    z-index: 1000;
 }
-
+#liste-formes li.selected {
+    background-color: #d0f0ff;
+    border-left: 4px solid #0099cc;
+    font-weight: bold;
+}
 #upArrow {
     display: block;
     margin: 0 auto 10px;
